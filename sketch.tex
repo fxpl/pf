@@ -1,19 +1,69 @@
 \documentclass{article}
 
-\usepackage{enumitem}
+\usepackage{ifthen}
+
+\newenvironment{pfproof}{}{}
+
+\newcounter{pfcasedepth}
+\newcounter{pfcasecounter}
+\newcounter{pfsubcasecounter}
+\newcounter{pfsubsubcasecounter}
+% etc.
+
+\newenvironment{pfcases}
+  {
+    \stepcounter{pfcasedepth}
+    \begin{enumerate}}
+  {
+    \ifthenelse{\thepfcasedepth = 1}{
+      \setcounter{pfcasecounter}{0}
+    }{
+    \ifthenelse{\thepfcasedepth = 2}{
+      \setcounter{pfsubcasecounter}{0}
+    }{
+    \ifthenelse{\thepfcasedepth = 3}{
+      \setcounter{pfsubsubcasecounter}{0}
+    }{
+      % etc.
+    }}}
+    \addtocounter{pfcasedepth}{-1}
+    \end{enumerate}
+  }
+
+\newcommand{\pfcase}[1]{
+  \ifthenelse{\thepfcasedepth = 1}{
+    \stepcounter{pfcasecounter}
+    \item[{\bf Case}~\thepfcasecounter] #1
+  }{
+  \ifthenelse{\thepfcasedepth = 2}{
+    \stepcounter{pfsubcasecounter}
+    \item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter] #1
+  }{
+  \ifthenelse{\thepfcasedepth = 3}{
+    \stepcounter{pfsubsubcasecounter}
+    \item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter] #1
+  }{
+    \item
+  }
+}}}
+
+% TODO: We have the current depth up to date. Should be able to
+% use all levels at once for labeling and get nesting right!
+\newcommand{\pflabel}[1]{}
+\newcommand{\pfref}[1]{}
 
 \begin{document}
 
 \section{Using \texttt{pfcases}}
 
-\begin{pftheorem}{Progress}
-  \begin{pfstatement}
+%\begin{pftheorem}{Progress}
+  % \begin{pfstatement}
 
-  \end{pfstatement}
+  % \end{pfstatement}
 
-  \begin{pfsketch}
+  % \begin{pfsketch}
 
-  \end{pfsketch}
+  % \end{pfsketch}
 
   \begin{pfproof}
     Here is the proof using \texttt{pfcases}.
@@ -26,23 +76,26 @@
       \end{pfcases}
 
       \pfcase{This should be case 2}\pflabel{case:second}
-
       \begin{pfcases}
         \pfcase{This should be case 2.1}\pflabel{case:first}
+        \begin{pfcases}
+          \pfcase{This should be case 2.1.1}
+        \end{pfcases}
 
-        \pfcase{This should be case 2.2}\pflabel{case:middle}\\
+        \pfcase{This should be case 2.2}\pflabel{case:middle}
         Same as \pfref{case:second}
 
-        \pfcase{This should be case 2.3}\\
+        \pfcase{This should be case 2.3}
         Same as \pfref{case:first}
       \end{pfcases}
 
-      \pfcase{This should be case 3}\\
+      \pfcase{This should be case 3}
       Same as \pfref{case:first}. But how do we refer to \pfref{case:middle}?
     \end{pfcases}
   \end{pfproof}
-\end{pftheorem}
+%\end{pftheorem}
 
+\end{document}
 \section{Using \texttt{enumerate} Manually}
 
 Here is how we would like it to look:
