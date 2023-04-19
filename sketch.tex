@@ -1,0 +1,73 @@
+\documentclass{article}
+
+\usepackage{enumitem}
+
+\begin{document}
+
+\section{Using \texttt{pfcases}}
+
+\begin{pftheorem}{Progress}
+  \begin{pfstatement}
+
+  \end{pfstatement}
+
+  \begin{pfsketch}
+
+  \end{pfsketch}
+
+  \begin{pfproof}
+    Here is the proof using \texttt{pfcases}.
+
+    \begin{pfcases}
+      \pfcase{This should be case 1}\pflabel{case:first}
+
+      \begin{pfcases}
+        \pfcase{This should be case 1.1}\pflabel{case:first}
+      \end{pfcases}
+
+      \pfcase{This should be case 2}\pflabel{case:second}
+
+      \begin{pfcases}
+        \pfcase{This should be case 2.1}\pflabel{case:first}
+
+        \pfcase{This should be case 2.2}\pflabel{case:middle}\\
+        Same as \pfref{case:second}
+
+        \pfcase{This should be case 2.3}\\
+        Same as \pfref{case:first}
+      \end{pfcases}
+
+      \pfcase{This should be case 3}\\
+      Same as \pfref{case:first}. But how do we refer to \pfref{case:middle}?
+    \end{pfcases}
+  \end{pfproof}
+\end{pftheorem}
+
+\section{Using \texttt{enumerate} Manually}
+
+Here is how we would like it to look:
+
+\begin{enumerate}[label*={\bf Case} \arabic*]
+  \item This should be case 1\label{case:first}
+
+  \begin{enumerate}[label*=.\arabic*]
+    \item This should be case 1.1 \label{scase:first1}
+  \end{enumerate}
+
+  \item This should be case 2\\
+    We proceed by cases:
+    %
+    \begin{enumerate}[label*=.\arabic*]
+    \item This should be case 2.1\label{scase:first2}
+
+    \item This should be case 2.2\label{scase:middle}
+
+    \item This should be case 2.3\\
+      Same as \ref{scase:first2}
+    \end{enumerate}
+
+  \item This should be case 3\\
+    Same as \ref{case:first}. But how do we refer to \ref{scase:middle}?
+\end{enumerate}
+
+\end{document}
