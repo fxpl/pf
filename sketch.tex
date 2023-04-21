@@ -6,19 +6,23 @@
 
 %% Code for handling cases
 
-% We have counters for tracking the current nesting depth of
-% cases, as well as the current case at each level.
-%
-% TODO: Check \counterwithin for linking the case counters and
-% resetting them automatically
+% We have counters for tracking the number of the current proof
+% and current nesting depth of cases, as well as the current case
+% at each level. The \counterwithin steps nested counters when the
+% outer steps.
+\newcounter{pfcounter}
 \newcounter{pfcasedepth}
 \newcounter{pfcasecounter}
+\counterwithin*{pfcasecounter}{pfcounter}
 \newcounter{pfsubcasecounter}
+\counterwithin{pfsubcasecounter}{pfcasecounter}
 \newcounter{pfsubsubcasecounter}
+\counterwithin{pfsubsubcasecounter}{pfsubcasecounter}
 % etc.
 
-% Entering a new set of cases increases depth and resets the case
-% counter of that depth.
+% Entering a new set of cases increases depth. When we finish the
+% outermost set of cases we step the current proof, resetting all
+% the counters.
 \newenvironment{pfcases}
   {
     \stepcounter{pfcasedepth}
@@ -26,28 +30,21 @@
   }
   {
     \ifthenelse{\thepfcasedepth = 1}{
-      \setcounter{pfcasecounter}{0}
-    }{
-    \ifthenelse{\thepfcasedepth = 2}{
-      \setcounter{pfsubcasecounter}{0}
-    }{
-    \ifthenelse{\thepfcasedepth = 3}{
-      \setcounter{pfsubsubcasecounter}{0}
-    }{
-      % etc.
-    }}}
+      \stepcounter{pfcounter}
+    }{}
     \addtocounter{pfcasedepth}{-1}
     \end{enumerate}
   }
 
-% Creating a new case increases the case counter of the current depth
+% Creating a new case increases the case counter of the current
+% depth (resetting the nested ones).
 \newcommand{\pfcase}[1]{%
 \ifthenelse{\thepfcasedepth = 1}
 {\stepcounter{pfcasecounter}\item[{\bf Case}~\thepfcasecounter] #1}
 {\ifthenelse{\thepfcasedepth = 2}
-  {\stepcounter{pfsubcasecounter}\item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter] #1}
+  {\stepcounter{pfsubcasecounter}\item[{\bf Case}~\thepfsubcasecounter] #1}
   {\ifthenelse{\thepfcasedepth = 3}
-    {\stepcounter{pfsubsubcasecounter}\item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter] #1}
+    {\stepcounter{pfsubsubcasecounter}\item[{\bf Case}~\thepfsubsubcasecounter] #1}
     {\item}}}}
 
 
@@ -64,16 +61,16 @@
 % TODO: Should have current proof as well
 \newcommand{\pfcalculate}{%
 \ifthenelse{\thepfcasedepth = 1}
-{\renewcommand\pfprefix{pf}%
+{\renewcommand\pfprefix{pf:\thepfcounter}%
 \renewcommand\pfposition{\thepfcasecounter}}
 {\ifthenelse{\thepfcasedepth = 2}
-  {\renewcommand\pfprefix{pf:\thepfcasecounter}%
-   \renewcommand\pfposition{\thepfcasecounter.\thepfsubcasecounter}}
+  {\renewcommand\pfprefix{pf:\thepfcounter:\thepfcasecounter}%
+   \renewcommand\pfposition{\thepfsubcasecounter}}
   {\ifthenelse{\thepfcasedepth = 3}
-    {\renewcommand\pfprefix{pf:\thepfcasecounter:\thepfsubcasecounter}%
-     \renewcommand\pfposition{\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter}}
-    {\renewcommand\pfprefix{pf:\thepfcasecounter:\thepfsubcasecounter:\thepfsubsubcasecounter}%
-     \renewcommand\pfposition{\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter.MAX}}}}%
+    {\renewcommand\pfprefix{pf:\thepfcounter:\thepfsubcasecounter}%
+     \renewcommand\pfposition{\thepfsubsubcasecounter}}
+    {\renewcommand\pfprefix{pf:\thepfcounter:\thepfsubsubcasecounter}%
+     \renewcommand\pfposition{\thepfsubsubcasecounter.MAX}}}}%
 }
 
 % The macro \pflabelas works like label, but also allows setting
@@ -90,9 +87,33 @@
 % Reference a label prefixed with the current position in the proof
 \newcommand{\pfref}[1]{\pfcalculate\ref{\pfprefix:#1}}
 
-\begin{document}
 
-%\section{Using \texttt{pfcases}}
+%% TODOs
+%
+% - Should be able to place labels in the top-most scope of the
+% current proof so that you can cross-reference cases. This also
+% means that \pfref needs to be able to pick the scope (local or
+% proof-global).
+%
+% - Could try to allow placing labels (and \pfref:ing labels) in
+% the surrounding scope, moving outwards in the hierarchy. My
+% guess is that this is more general than is needed!
+%
+% - The pftheorem environment should give a name to the theorem
+% being proved and initialize counters. There should probably be a
+% general environment that can be reused for pftheorem, pflemma,
+% pfproposition...
+%
+% - The pfstatement and pfsketch environments should allow stating
+% and providing a proof sketch.
+%
+% - It would be nice to have a standardized way of providing
+% assumptions (e.g., a pfassumptions environment)
+%
+% - It might be a good idea to have a simple pfsteps environment
+% for the steps in a case, mostly to be able to standardize that.
+
+\begin{document}
 
 %\begin{pftheorem}{Progress}
   % \begin{pfstatement}
@@ -116,6 +137,21 @@
 
   \pfcase{Also Bar}\pflabel{bar}\\
   Case~\pfref{bar} is the same as Case~\pfref{foo}
+\end{pfcases}
+
+\begin{pfcases}
+  \pfcase{Bar}\pflabel{bar}\\
+  We proceed by cases:
+  \begin{pfcases}
+    \pfcase{Also Bar}\pflabel{bar}\\
+    Trivial
+
+    \pfcase{Foo}\pflabel{foo}\\
+    Case~\pfref{foo} is the same as Case~\pfref{bar}. We proceed by cases:
+  \end{pfcases}
+
+  \pfcase{Also Foo}\pflabel{foo}\\
+  Case~\pfref{foo} is the same as Case~\pfref{bar}
 \end{pfcases}
 
 \end{document}
