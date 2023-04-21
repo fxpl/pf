@@ -4,16 +4,26 @@
 
 \newenvironment{pfproof}{}{}
 
+%% Code for handling cases
+
+% We have counters for tracking the current nesting depth of
+% cases, as well as the current case at each level.
+%
+% TODO: Check \counterwithin for linking the case counters and
+% resetting them automatically
 \newcounter{pfcasedepth}
 \newcounter{pfcasecounter}
 \newcounter{pfsubcasecounter}
 \newcounter{pfsubsubcasecounter}
 % etc.
 
+% Entering a new set of cases increases depth and resets the case
+% counter of that depth.
 \newenvironment{pfcases}
   {
     \stepcounter{pfcasedepth}
-    \begin{enumerate}}
+    \begin{enumerate}
+  }
   {
     \ifthenelse{\thepfcasedepth = 1}{
       \setcounter{pfcasecounter}{0}
@@ -30,31 +40,59 @@
     \end{enumerate}
   }
 
-\newcommand{\pfcase}[1]{
-  \ifthenelse{\thepfcasedepth = 1}{
-    \stepcounter{pfcasecounter}
-    \item[{\bf Case}~\thepfcasecounter] #1
-  }{
-  \ifthenelse{\thepfcasedepth = 2}{
-    \stepcounter{pfsubcasecounter}
-    \item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter] #1
-  }{
-  \ifthenelse{\thepfcasedepth = 3}{
-    \stepcounter{pfsubsubcasecounter}
-    \item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter] #1
-  }{
-    \item
-  }
-}}}
+% Creating a new case increases the case counter of the current depth
+\newcommand{\pfcase}[1]{%
+\ifthenelse{\thepfcasedepth = 1}
+{\stepcounter{pfcasecounter}\item[{\bf Case}~\thepfcasecounter] #1}
+{\ifthenelse{\thepfcasedepth = 2}
+  {\stepcounter{pfsubcasecounter}\item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter] #1}
+  {\ifthenelse{\thepfcasedepth = 3}
+    {\stepcounter{pfsubsubcasecounter}\item[{\bf Case}~\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter] #1}
+    {\item}}}}
 
-% TODO: We have the current depth up to date. Should be able to
-% use all levels at once for labeling and get nesting right!
-\newcommand{\pflabel}[1]{}
-\newcommand{\pfref}[1]{}
+
+%% Code for dealing with labels and cross-referencing
+
+% The prefix added to labels and references at the current level
+\newcommand{\pfprefix}{pf}
+% The text produced by \pfref
+\newcommand{\pfposition}{1}
+
+% The \pfcalculate macro sets the correct values of \pfprefix and
+% \pfposition based on where it is invoked
+%
+% TODO: Should have current proof as well
+\newcommand{\pfcalculate}{%
+\ifthenelse{\thepfcasedepth = 1}
+{\renewcommand\pfprefix{pf}%
+\renewcommand\pfposition{\thepfcasecounter}}
+{\ifthenelse{\thepfcasedepth = 2}
+  {\renewcommand\pfprefix{pf:\thepfcasecounter}%
+   \renewcommand\pfposition{\thepfcasecounter.\thepfsubcasecounter}}
+  {\ifthenelse{\thepfcasedepth = 3}
+    {\renewcommand\pfprefix{pf:\thepfcasecounter:\thepfsubcasecounter}%
+     \renewcommand\pfposition{\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter}}
+    {\renewcommand\pfprefix{pf:\thepfcasecounter:\thepfsubcasecounter:\thepfsubsubcasecounter}%
+     \renewcommand\pfposition{\thepfcasecounter.\thepfsubcasecounter.\thepfsubsubcasecounter.MAX}}}}%
+}
+
+% The macro \pflabelas works like label, but also allows setting
+% the string associated with the label.
+\makeatletter
+\newcommand\pflabelas[2]{%
+  \def\@currentlabel{#2}%
+  \label{#1}}
+\makeatother
+
+% Create a label prefixed with the current position in the proof
+\newcommand{\pflabel}[1]{\pfcalculate\pflabelas{\pfprefix:#1}{\pfposition}}
+
+% Reference a label prefixed with the current position in the proof
+\newcommand{\pfref}[1]{\pfcalculate\ref{\pfprefix:#1}}
 
 \begin{document}
 
-\section{Using \texttt{pfcases}}
+%\section{Using \texttt{pfcases}}
 
 %\begin{pftheorem}{Progress}
   % \begin{pfstatement}
@@ -65,62 +103,19 @@
 
   % \end{pfsketch}
 
-  \begin{pfproof}
-    Here is the proof using \texttt{pfcases}.
+\begin{pfcases}
+  \pfcase{Foo}\pflabel{foo}\\
+  We proceed by cases:
+  \begin{pfcases}
+    \pfcase{Also Foo}\pflabel{foo}\\
+    Trivial
 
-    \begin{pfcases}
-      \pfcase{This should be case 1}\pflabel{case:first}
+    \pfcase{Bar}\pflabel{bar}\\
+    Case~\pfref{bar} is the same as Case~\pfref{foo}. We proceed by cases:
+  \end{pfcases}
 
-      \begin{pfcases}
-        \pfcase{This should be case 1.1}\pflabel{case:first}
-      \end{pfcases}
-
-      \pfcase{This should be case 2}\pflabel{case:second}
-      \begin{pfcases}
-        \pfcase{This should be case 2.1}\pflabel{case:first}
-        \begin{pfcases}
-          \pfcase{This should be case 2.1.1}
-        \end{pfcases}
-
-        \pfcase{This should be case 2.2}\pflabel{case:middle}
-        Same as \pfref{case:second}
-
-        \pfcase{This should be case 2.3}
-        Same as \pfref{case:first}
-      \end{pfcases}
-
-      \pfcase{This should be case 3}
-      Same as \pfref{case:first}. But how do we refer to \pfref{case:middle}?
-    \end{pfcases}
-  \end{pfproof}
-%\end{pftheorem}
-
-\end{document}
-\section{Using \texttt{enumerate} Manually}
-
-Here is how we would like it to look:
-
-\begin{enumerate}[label*={\bf Case} \arabic*]
-  \item This should be case 1\label{case:first}
-
-  \begin{enumerate}[label*=.\arabic*]
-    \item This should be case 1.1 \label{scase:first1}
-  \end{enumerate}
-
-  \item This should be case 2\\
-    We proceed by cases:
-    %
-    \begin{enumerate}[label*=.\arabic*]
-    \item This should be case 2.1\label{scase:first2}
-
-    \item This should be case 2.2\label{scase:middle}
-
-    \item This should be case 2.3\\
-      Same as \ref{scase:first2}
-    \end{enumerate}
-
-  \item This should be case 3\\
-    Same as \ref{case:first}. But how do we refer to \ref{scase:middle}?
-\end{enumerate}
+  \pfcase{Also Bar}\pflabel{bar}\\
+  Case~\pfref{bar} is the same as Case~\pfref{foo}
+\end{pfcases}
 
 \end{document}
